@@ -1,0 +1,546 @@
+Public Class MaterialGradeCreator
+    Private Da_MtrlType, Da_MtrlCode, Da_MtrlGrade, Da_MtrlShape As MySql.Data.MySqlClient.MySqlDataAdapter
+    Dim MySource As New AutoCompleteStringCollection()
+    Public Shared Event tableChanged(ByVal info As magod.events.MISChangedEventArguments)
+    Public Sub New()
+
+        ' This call is required by the Windows Form Designer.
+        InitializeComponent()
+
+        ' Add any initialization after the InitializeComponent() call.
+        SetUp.StartupPath = Application.StartupPath
+        SetUp.UserName = "Sales"
+        SetUp.PassWord = "sales"
+        SetUp.Function = "Sales"
+        SetUp.SetUp()
+        set_DAmtrlGrade()
+        Me.Label_Instr.Text = "Select SHAPE, Material Grade. Enter Parameters and Save"
+    End Sub
+
+    Public Sub New(ByRef MD As magod.Util.magodData)
+        ' This call is required by the Windows Form Designer.
+        InitializeComponent()
+        SetUp.setUp(MD)
+        set_DAmtrlGrade()
+        Me.Label_Instr.Text = "Select SHAPE, Material Grade. Enter Parameters and Save"
+    End Sub
+    Private Sub set_DAmtrlGrade()
+
+        Da_MtrlGrade = SetUp.getDBLink.getMySqlDataAdopter
+        Da_MtrlType = SetUp.getDBLink.getMySqlDataAdopter
+        Da_MtrlCode = SetUp.getDBLink.getMySqlDataAdopter
+        Da_MtrlShape = SetUp.getDBLink.getMySqlDataAdopter
+        With Da_mtrlType
+
+            .SelectCommand.CommandText = "SELECT * FROM magodmis.mtrl_typeslist m  ORDER BY m.`Material`;"
+            '.Fill(MaterialDS1.MtrlMaster)
+        End With
+        With Da_MtrlGrade
+
+            With .SelectCommand
+                .CommandText = "SELECT m.*,m1.MtrlId FROM magodmis.MtrlGrades m,magodmis.Mtrl_typesList m1 " _
+              & "WHERE m.material=m1.material Order By m.MtrlGradeId;"
+            End With
+            '.Fill(MaterialDS1.GradeMaster)
+
+
+        End With
+        With Da_MtrlShape
+            With .SelectCommand
+                .CommandText = "SELECT * FROM magodmis.Shapes;"
+            End With
+            ' .Fill(MaterialDS1.ShapeMaster)
+        End With
+
+        With Da_MtrlCode
+            With .SelectCommand
+                .CommandText = "SELECT m.`Mtrl_Code`, m.`Shape`, m.`StaticPara1`, m.`StaticPara2`, " _
+             & "m.`StaticPara3`, m.`StaticPara4`, m.`Thickness`, m1.`Material`,m1.`Grade`, m1.`MtrlGradeID`, " _
+             & "m1.`Specific_Wt` , m1.`Excise_Cl_No`, m.`Sales`, m.`JobWork` " _
+             & "FROM magodmis.mtrl_data m, magodmis.mtrlgrades m1 " _
+             & "WHERE m1.`MtrlGradeID`=m.`MtrlGradeID` Order By Mtrl_Code;"
+            End With
+            ' .Fill(MaterialDS1.MtrlCodeList)
+
+        End With
+    End Sub
+    Private Sub loadData()
+        Da_MtrlType.Fill(MaterialDS1.MtrlMaster)
+        Da_MtrlGrade.Fill(MaterialDS1.GradeMaster)
+        Da_MtrlShape.Fill(MaterialDS1.ShapeMaster)
+        Da_MtrlCode.Fill(MaterialDS1.MtrlCodeList)
+    End Sub
+
+
+    Private Sub DGV_Grade_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles DGV_Grade.Click
+        If Not DGV_Grade.CurrentRow Is Nothing Then
+            If Not IsDBNull(DGV_Grade.CurrentRow.Cells("ExCl1").Value) Then
+                Me.TextBox_ExCl.Text = DGV_Grade.CurrentRow.Cells("ExCl1").Value
+            Else
+                Me.TextBox_ExCl.Text = "Unknown"
+            End If
+
+            Me.TextBox_NewGrade.Text = DGV_Grade.CurrentRow.Cells("mtrlGrade").Value
+            Me.TextBox_SpWt.Text = DGV_Grade.CurrentRow.Cells("SpWt1").Value
+        End If
+    End Sub
+
+
+    Private Sub DGV_Material_CellClick(ByVal sender As System.Object, ByVal e As System.Windows.Forms.DataGridViewCellEventArgs) Handles DGV_Material.CellClick
+        If Not DGV_Material.CurrentRow Is Nothing Then
+            If Not IsDBNull(DGV_Material.CurrentRow.Cells("ExCl").Value) Then
+                Me.TextBox_ExCl.Text = DGV_Material.CurrentRow.Cells("ExCl").Value
+            Else
+                Me.TextBox_ExCl.Text = "Unknown"
+            End If
+
+
+            Me.TextBox_SpWt.Text = DGV_Material.CurrentRow.Cells("SpWt").Value
+        End If
+
+    End Sub
+
+    Private Sub BS_MaterialType_PositionChanged(ByVal sender As Object, ByVal e As System.EventArgs) Handles BS_MaterialType.PositionChanged
+        If Not BS_MaterialType Is Nothing Then
+            MySource.Clear()
+            For Each obj In BS_MtrlGrade.List
+                MySource.Add(UCase(obj.item("Grade")))
+
+            Next
+            TextBox_NewGrade.AutoCompleteCustomSource = MySource
+            TextBox_NewGrade.AutoCompleteMode = AutoCompleteMode.Suggest
+            TextBox_NewGrade.AutoCompleteSource = AutoCompleteSource.CustomSource
+            If Not BS_MtrlGrade.Current Is Nothing Then
+                BS_MtrlCode.Filter = String.Format("MtrlGradeId='{0}'", BS_MtrlGrade.Current.item("MtrlGradeId"))
+                resetMtrlCode()
+                setMtrlCode()
+            End If
+
+        End If
+    End Sub
+
+    Private Sub Btn_SaveGrade_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles Btn_SaveGrade.Click
+        Dim GradeCompnents As String() = Split(Me.TextBox_NewGrade.Text, " ")
+        Dim newGrade As String = ""
+        For Each item As String In GradeCompnents
+
+            If item.Length > 0 Then
+                newGrade = newGrade + Trim(item) + " "
+                Console.WriteLine(item)
+            End If
+
+
+
+        Next
+        newGrade = UCase(Trim(newGrade))
+
+        If MySource.Contains(newGrade) Then
+            If MsgBox(String.Format("Material Grade {0} already exists. Do you wish to Save changes?", newGrade), MsgBoxStyle.YesNo) Then
+                With SetUp.getCommand
+                    .CommandText = "UPDATE magodmis.mtrlgrades SET " _
+                    & "  Specific_Wt=@Specific_Wt, Excise_Cl_No=@Excise_Cl_No " _
+                    & "WHERE MtrlGradeID=@MtrlGradeID;"
+                    With .Parameters
+                        .Clear()
+                        .AddWithValue("@MtrlGradeID", BS_MtrlGrade.Current.item("MtrlGradeID"))
+                        .AddWithValue("@Specific_Wt", Me.TextBox_SpWt.Text)
+                        .AddWithValue("@Excise_Cl_No", Me.TextBox_ExCl.Text)
+
+                    End With
+                    .Connection.Open()
+                    .ExecuteNonQuery()
+                    .Connection.Close()
+                    DGV_Grade.CurrentRow.Cells("SpWt1").Value = Me.TextBox_SpWt.Text
+                    DGV_Grade.CurrentRow.Cells("ExCl1").Value = Me.TextBox_ExCl.Text
+                    MsgBox(Me.TextBox_NewGrade.Text & " saved")
+                End With
+            End If
+
+        Else
+            If MsgBox(String.Format("Do you wish to add new Material Grade {0} ?", newGrade), MsgBoxStyle.YesNo) = MsgBoxResult.Yes Then
+                Dim Grade As magod.MaterialDS.GradeMasterRow = MaterialDS1.GradeMaster.NewGradeMasterRow
+                With Grade
+                    .Excise_Cl_No = Me.TextBox_ExCl.Text
+                    .Grade = newGrade
+                    .MtrlGradeID = BS_MaterialType.Current.item("MtrlId") & " " & newGrade
+                    .MtrlID = BS_MaterialType.Current.item("MtrlId")
+                    .Specific_Wt = Me.TextBox_SpWt.Text
+
+                End With
+
+                With SetUp.getCommand
+                    .CommandText = "INSERT INTO magodmis.mtrlgrades " _
+                    & "(Material, Grade, MtrlGradeID, Specific_Wt, Excise_Cl_No) " _
+                    & "VALUES(@Material, @Grade, @MtrlGradeID, @Specific_Wt, @Excise_Cl_No);"
+                    With .Parameters
+                        .Clear()
+                        .AddWithValue("@Material", BS_MaterialType.Current.item("Material"))
+                        .AddWithValue("@Grade", Grade.Grade)
+                        .AddWithValue("@MtrlGradeID", Grade.MtrlGradeID)
+                        .AddWithValue("@Specific_Wt", Grade.Specific_Wt)
+                        .AddWithValue("@Excise_Cl_No", Grade.Excise_Cl_No)
+
+                    End With
+                    .Connection.Open()
+                    .ExecuteNonQuery()
+                    .Connection.Close()
+                    MaterialDS1.GradeMaster.AddGradeMasterRow(Grade)
+                    MsgBox(Grade.MtrlGradeID & " added to List")
+                End With
+            End If
+        End If
+    End Sub
+
+    Private Sub BS_MtrlGrade_PositionChanged(ByVal sender As Object, ByVal e As System.EventArgs) Handles BS_MtrlGrade.PositionChanged
+        If Not (BS_MtrlCode Is Nothing Or BS_MtrlGrade.Current Is Nothing) Then
+            BS_MtrlCode.Filter = String.Format("MtrlGradeId='{0}'", BS_MtrlGrade.Current.item("MtrlGradeId"))
+            resetMtrlCode()
+            setMtrlCode()
+        End If
+    End Sub
+
+    Private Sub BS_Shape_PositionChanged(ByVal sender As Object, ByVal e As System.EventArgs) Handles BS_Shape.PositionChanged
+        resetMtrlCode()
+        setMtrlCode()
+    End Sub
+    Private Sub resetMtrlCode()
+        If BS_Shape.Current Is Nothing Then
+            Exit Sub
+        End If
+        Me.GB_Shape.Text = BS_Shape.Current.item("Shape") & " Parameters"
+        Me.LabelStatic1.Text = ""
+        Me.LabelStatic2.Text = ""
+        Me.LabelStatic3.Text = ""
+        Me.LabelStatic1Unit.Text = ""
+        Me.LabelStatic2Unit.Text = ""
+        Me.LabelStatic3Unit.Text = ""
+        Me.TextBox_SP1.Visible = False
+        Me.TextBox_SP2.Visible = False
+        Me.TextBox_SP3.Visible = False
+        Me.TextBox_SP1.Text = "0"
+        Me.TextBox_SP2.Text = "0"
+        Me.TextBox_SP3.Text = "0"
+        ' MsgBox(Me.cmbShape.Text)
+        'intIndex = BS_Shapes.Find("Shape", Me.cmbShape.Text)
+        'If intIndex <> -1 Then
+        With BS_Shape
+
+
+            If Not IsDBNull(.Current.Item("StaticPara1")) Then
+                Me.LabelStatic1.Text = .Current.Item("StaticPara1")
+                Me.LabelStatic1Unit.Text = .Current.Item("StaticPara1unit")
+                Me.TextBox_SP1.Visible = True
+            End If
+            If .Current.Item("Shape") <> "Tube Square" Then
+                If Not IsDBNull(.Current.Item("StaticPara2")) Then
+                    Me.LabelStatic2.Text = .Current.Item("StaticPara2")
+                    Me.LabelStatic2Unit.Text = .Current.Item("StaticPara2unit")
+                    Me.TextBox_SP2.Visible = True
+                End If
+            End If
+            If Not IsDBNull(.Current.Item("StaticPara3")) Then
+
+                Me.LabelStatic3.Text = .Current.Item("StaticPara3")
+                Me.LabelStatic3Unit.Text = .Current.Item("StaticPara3unit")
+                Me.TextBox_SP3.Visible = True
+
+            End If
+        End With
+
+    End Sub
+    Private Sub setMtrlCode()
+        If BS_Shape.Current Is Nothing Or BS_MtrlGrade.Current Is Nothing Then
+            Exit Sub
+        End If
+        Dim strShapeMtrl, strDimension As String
+        strDimension = ""
+        'strShapeMtrl = Me.cmbShape.Text & " " & Me.cmbGrade.SelectedValue
+        strShapeMtrl = BS_Shape.Current.item("Shape") & " " & BS_MtrlGrade.Current.Item("MtrlGradeID")
+        'strDimension = strShapeMtrl
+        Select Case BS_Shape.Current.item("Shape")
+            Case "Sheet"
+                If Not Me.TextBox_SP1.Text.Length = 0 AndAlso IsNumeric(Me.TextBox_SP1.Text) Then
+                    If CDbl(Trim(Me.TextBox_SP1.Text)) > 0 Then
+                        strDimension = strShapeMtrl & " " & Trim(Me.TextBox_SP1.Text)
+                        Me.btnCreate.Enabled = True
+                    End If
+                Else
+                    MsgBox("Enter Thickness")
+                    strDimension = strShapeMtrl
+                    '   Me.btnCreate.Enabled = False
+                    Exit Sub
+
+                End If
+
+
+            Case "Plate"
+                If Not Me.TextBox_SP1.Text.Length = 0 AndAlso IsNumeric(Me.TextBox_SP1.Text) Then
+                    If CDbl(Trim(Me.TextBox_SP1.Text)) > 0 Then
+                        strDimension = strShapeMtrl & " " & Trim(Me.TextBox_SP1.Text)
+                        Me.btnCreate.Enabled = True
+                    End If
+                Else
+                    MsgBox("Enter Thickness")
+                    strDimension = strShapeMtrl
+                    '  Me.btnCreate.Enabled = False
+                    Exit Sub
+                End If
+
+
+
+            Case "Tube Round"
+                If Not Me.TextBox_SP1.Text.Length = 0 AndAlso IsNumeric(Me.TextBox_SP1.Text) Then
+                    If Not Me.TextBox_SP2.Text.Length = 0 AndAlso IsNumeric(Me.TextBox_SP2.Text) Then
+                        If CDbl(Trim(Me.TextBox_SP1.Text)) > 0 And CDbl(Trim(Me.TextBox_SP2.Text)) > 0 Then
+                            strDimension = strShapeMtrl & " " & Trim(Me.TextBox_SP1.Text) & " " & Trim(Me.TextBox_SP2.Text)
+                            Me.btnCreate.Enabled = True
+                        End If
+                    Else
+                        MsgBox("Enter OD and Thickness")
+                        strDimension = strShapeMtrl
+                        '  Me.btnCreate.Enabled = False
+                        Exit Sub
+                    End If
+
+                End If
+
+
+            Case "Strip"
+                If Not Me.TextBox_SP1.Text.Length = 0 AndAlso IsNumeric(Me.TextBox_SP1.Text) Then
+                    If Not Me.TextBox_SP2.Text.Length = 0 AndAlso IsNumeric(Me.TextBox_SP2.Text) Then
+                        If CDbl(Trim(Me.TextBox_SP1.Text)) > 0 And CDbl(Trim(Me.TextBox_SP2.Text)) > 0 Then
+                            strDimension = strShapeMtrl & " " & Trim(Me.TextBox_SP1.Text) & " " & Trim(Me.TextBox_SP2.Text)
+                            Me.btnCreate.Enabled = True
+                        End If
+                    Else
+                        MsgBox("Enter Thickness")
+                        strDimension = strShapeMtrl
+                        '   Me.btnCreate.Enabled = False
+                        Exit Sub
+                    End If
+
+                End If
+
+
+            Case "Tube Square"
+                If Not Me.TextBox_SP1.Text.Length = 0 AndAlso IsNumeric(Me.TextBox_SP1.Text) Then
+                    If Not Me.TextBox_SP3.Text.Length = 0 AndAlso IsNumeric(Me.TextBox_SP3.Text) Then
+                        If CDbl(Trim(Me.TextBox_SP1.Text)) > 0 And CDbl(Trim(Me.TextBox_SP3.Text)) > 0 Then
+                            strDimension = strShapeMtrl & " " & Trim(Me.TextBox_SP1.Text) & " " _
+                                                           & Trim(Me.TextBox_SP1.Text) & " " _
+                                                           & Trim(Me.TextBox_SP3.Text)
+                            Me.TextBox_SP2.Text = Me.TextBox_SP1.Text
+                            Me.btnCreate.Enabled = True
+                        End If
+                    Else
+                        MsgBox("Enter Side Dimension and Thickness")
+                        strDimension = strShapeMtrl
+                        '   Me.btnCreate.Enabled = False
+                        Exit Sub
+
+                    End If
+                End If
+
+
+            Case "Tube Rectangle"
+                If Not Me.TextBox_SP1.Text.Length = 0 AndAlso IsNumeric(Me.TextBox_SP1.Text) Then
+                    If Not Me.TextBox_SP2.Text.Length = 0 AndAlso IsNumeric(Me.TextBox_SP2.Text) Then
+                        If Not Me.TextBox_SP3.Text.Length = 0 AndAlso IsNumeric(Me.TextBox_SP3.Text) Then
+                            If CDbl(Trim(Me.TextBox_SP1.Text)) > 0 _
+                                           And CDbl(Trim(Me.TextBox_SP2.Text)) > 0 _
+                                           And CDbl(Trim(Me.TextBox_SP3.Text)) > 0 Then
+                                strDimension = strShapeMtrl & " " & Trim(Me.TextBox_SP1.Text) & " " _
+                                                              & Trim(Me.TextBox_SP2.Text) & " " _
+                                                              & Trim(Me.TextBox_SP3.Text)
+                                Me.btnCreate.Enabled = True
+                            End If
+                        Else
+                            MsgBox("Enter Length, Width and Thickness")
+                            strDimension = strShapeMtrl
+                            '       Me.btnCreate.Enabled = False
+                            Exit Sub
+                        End If
+
+                    End If
+                End If
+
+
+            Case "Tiles"
+                If Not Me.TextBox_SP1.Text.Length = 0 AndAlso IsNumeric(Me.TextBox_SP1.Text) Then
+                    If Not Me.TextBox_SP2.Text.Length = 0 AndAlso IsNumeric(Me.TextBox_SP2.Text) Then
+                        If Not Me.TextBox_SP3.Text.Length = 0 AndAlso IsNumeric(Me.TextBox_SP3.Text) Then
+                            If CDbl(Trim(Me.TextBox_SP1.Text)) > 0 _
+                                           And CDbl(Trim(Me.TextBox_SP2.Text)) > 0 _
+                                           And CDbl(Trim(Me.TextBox_SP3.Text)) > 0 Then
+                                strDimension = strShapeMtrl & " " & Trim(Me.TextBox_SP1.Text) & " " _
+                                                               & Trim(Me.TextBox_SP2.Text) & " " _
+                                                               & Trim(Me.TextBox_SP3.Text)
+                                Me.btnCreate.Enabled = True
+                            End If
+                        Else
+                            MsgBox("Enter Length, Width and Thickness")
+                            strDimension = strShapeMtrl
+                            '       Me.btnCreate.Enabled = False
+                            Exit Sub
+
+                        End If
+                    End If
+
+                End If
+
+            Case "Cylinder"
+                If Not Me.TextBox_SP1.Text.Length = 0 AndAlso IsNumeric(Me.TextBox_SP1.Text) Then
+                    If CDbl(Trim(Me.TextBox_SP1.Text)) > 0 Then
+                        strDimension = strShapeMtrl & " " & Trim(Me.TextBox_SP1.Text)
+                        Me.btnCreate.Enabled = True
+                    End If
+                Else
+                    MsgBox("Enter Cylinder Volume")
+                    strDimension = strShapeMtrl
+                    '   Me.btnCreate.Enabled = False
+                    Exit Sub
+
+                End If
+
+            Case Else
+                strDimension = strShapeMtrl
+                ' Me.btnCreate.Enabled = True
+        End Select
+        Me.TextBox_mtrlCode.Text = strDimension
+
+
+
+    End Sub
+
+    Private Sub TextBox_SP1_Validating(ByVal sender As Object, ByVal e As System.ComponentModel.CancelEventArgs) Handles TextBox_SP1.Validating
+        If Not IsNumeric(Me.TextBox_SP1.Text) AndAlso Not Me.TextBox_SP1.Text = "" Then
+            MsgBox("Dimensions are Numeric")
+            e.Cancel = True
+        End If
+        Me.TextBox_SP1.Text = RemoveDot(Me.TextBox_SP1.Text)
+        setMtrlCode()
+    End Sub
+    Private Sub TextBox_SP2_Validating(ByVal sender As Object, ByVal e As System.ComponentModel.CancelEventArgs) Handles TextBox_SP2.Validating
+        If Not IsNumeric(Me.TextBox_SP2.Text) AndAlso Not Me.TextBox_SP2.Text = "" Then
+            MsgBox("Dimensions are Numeric")
+            e.Cancel = True
+        End If
+        Me.TextBox_SP2.Text = RemoveDot(Me.TextBox_SP2.Text)
+        setMtrlCode()
+    End Sub
+
+    Private Sub TextBox_SP3_Validating(ByVal sender As Object, ByVal e As System.ComponentModel.CancelEventArgs) Handles TextBox_SP3.Validating
+        If Not IsNumeric(Me.TextBox_SP3.Text) AndAlso Not Me.TextBox_SP3.Text = "" Then
+            MsgBox("Dimensions are Numeric")
+            e.Cancel = True
+        End If
+        Me.TextBox_SP3.Text = RemoveDot(Me.TextBox_SP3.Text)
+        setMtrlCode()
+    End Sub
+
+    Private Function RemoveDot(ByVal str As String) As String
+        If str.Length <> 0 AndAlso Microsoft.VisualBasic.Right(str, 1) = "." Then
+            str = Microsoft.VisualBasic.Left(str, str.Length - 1)
+        End If
+        Return str
+    End Function
+    Private Function checkMtrlCode() As Boolean
+        '*** Check if all parameters for the Mtrl code have been recorded
+        If BS_MtrlGrade.Current Is Nothing Then
+            MsgBox("Create Material Grade")
+            Return False
+        End If
+        If BS_Shape.Current Is Nothing Then
+            MsgBox("Create Material Shape")
+            Return False
+        End If
+        If Me.TextBox_SP1.Visible AndAlso (Me.TextBox_SP1.Text = "" Or Me.TextBox_SP1.Text = "0") Then
+            MsgBox("Value for Dimension cannot be blank or Zero")
+            Return False
+        End If
+        If Me.TextBox_SP2.Visible AndAlso (Me.TextBox_SP2.Text = "" Or Me.TextBox_SP2.Text = "0") Then
+            MsgBox("Value for Dimension cannot be blank  or Zero")
+            Return False
+        End If
+        If Me.TextBox_SP3.Visible AndAlso (Me.TextBox_SP3.Text = "" Or Me.TextBox_SP3.Text = "0") Then
+            MsgBox("Value for Dimension cannot be blank  or Zero")
+            Return False
+        End If
+        ' setMtrlCode()
+        If Me.TextBox_mtrlCode.Text.Length > 0 Then
+            If Not MaterialDS1.MtrlCodeList.FindByMtrl_Code(Me.TextBox_mtrlCode.Text) Is Nothing Then
+                MsgBox(Me.TextBox_mtrlCode.Text & " already exists in the Material List")
+                Return False
+            End If
+
+            'Dim intLocate As Integer = 
+            'If intLocate <> -1 Then
+            ' e()
+            'End If
+        Else
+            Return False
+        End If
+
+        Return True
+        'ShapeMtrlID, MtrlGradeID, Shape, Mtrl_Type, StaticPara1, StaticPara2, StaticPara3, 
+        'StaticPara4, StaticPara5, Thickness, Grade, SpecificWt, ExciseCl_No, DIN_SPECS, Mtrl_Code, Sales, JobWork
+    End Function
+
+    Private Sub btnCreate_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles btnCreate.Click
+        If checkMtrlCode() Then
+            If MsgBox("Do you wish to create new Material Code : " & Me.TextBox_mtrlCode.Text, MsgBoxStyle.YesNo) = MsgBoxResult.No Then
+                Me.btnCreate.Enabled = False
+                Exit Sub
+            End If
+            Dim obj As magod.MaterialDS.MtrlCodeListRow = MaterialDS1.MtrlCodeList.NewMtrlCodeListRow
+
+
+            With obj
+                .Mtrl_Code = Me.TextBox_mtrlCode.Text
+                .MtrlGradeID = BS_MtrlGrade.Current.item("MtrlGradeID")
+                .Shape = BS_Shape.Current.item("Shape")
+                .Mtrl_Type = BS_MaterialType.Current.item("Material")
+                ' .StaticPara1
+                .StaticPara1 = Me.TextBox_SP1.Text
+                .StaticPara2 = Me.TextBox_SP2.Text
+                .StaticPara3 = Me.TextBox_SP3.Text
+            End With
+
+            Try
+                With SetUp.getCommand
+                    .CommandText = "Insert Into magodmis.Mtrl_data(MtrlGradeID, Shape, Mtrl_Type, mtrl_code," _
+               & "StaticPara1, StaticPara2, StaticPara3) Values(@MtrlGradeID, @Shape, @Mtrl_Type, @mtrl_code," _
+               & "@StaticPara1, @StaticPara2, @StaticPara3) " _
+               & "On Duplicate Key update StaticPara3= @StaticPara3;"
+
+                    With .Parameters
+                        .Clear()
+                        .AddWithValue("@MtrlGradeID", obj.MtrlGradeID)
+                        .AddWithValue("@Shape", obj.Shape)
+                        .AddWithValue("@Mtrl_Type", obj.Mtrl_Type)
+                        .AddWithValue("@mtrl_code", obj.Mtrl_Code)
+                        .AddWithValue("@StaticPara1", obj.StaticPara1)
+                        .AddWithValue("@StaticPara2", obj.StaticPara2)
+                        .AddWithValue("@StaticPara3", obj.StaticPara3)
+                    End With
+                    .Connection.Open()
+                    .ExecuteNonQuery()
+                    RaiseEvent tableChanged(New magod.events.MISChangedEventArguments("magodmis", "Mtrl_Data"))
+                    MaterialDS1.MtrlCodeList.AddMtrlCodeListRow(obj)
+                    obj.AcceptChanges()
+                    MsgBox(Me.TextBox_mtrlCode.Text & " Added to Materials List")
+                End With
+
+            Catch ex As Exception
+                MsgBox(ex.Message)
+            Finally
+                SetUp.getCommand.Connection.Close()
+                SetUp.getCommand.Parameters.Clear()
+            End Try
+        End If
+    End Sub
+
+    Private Sub MaterialGradeCreator_Load(sender As Object, e As EventArgs) Handles Me.Load
+        loadData()
+    End Sub
+End Class
