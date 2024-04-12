@@ -1,1 +1,1 @@
-# mgd_material_setup
+# magod-frontend-production
