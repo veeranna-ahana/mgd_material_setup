@@ -673,22 +673,24 @@ export default function MaterialCodeCreator(props) {
   ));
 
   return (
-    <div>
-      <div className="row">
+    <>
+      <div className="row mt-1">
         <div className="col-md-8 col-sm-12">
-          <label className="form-label">Select Shape</label>
-          <select
-            id=""
-            className="ip-select"
-            style={{ width: "250px" }}
-            value={selectedShape}
-            onChange={handleShapeChange}
-          >
-            <option value="">Select Shape</option>
-            {shapeOptions}
-          </select>
+          <div className="d-flex" style={{ gap: "10px" }}>
+            <label className="form-label">Select Shape</label>
+            <select
+              id=""
+              className="ip-select"
+              style={{ width: "250px" }}
+              value={selectedShape}
+              onChange={handleShapeChange}
+            >
+              <option value="">Select Shape</option>
+              {shapeOptions}
+            </select>
+          </div>
           <h6 className="mt-2">
-            <b>Select Material Grade</b>
+            <label className="form-label">Select Material Grade</label>
           </h6>
           <div
             className="mt-2"
@@ -733,33 +735,36 @@ export default function MaterialCodeCreator(props) {
               </tbody>
             </Table>
           </div>
-          <Form className="mt-3 mb-5">
+          <Form className="mt-2 mb-5">
             <div className="form-bg ip-box" style={{ height: "340px" }}>
               <div style={{ height: "170px" }}>{selectedForm}</div>
-              <label className="form-label">New Material Code</label>
-              <input
-                className="in-fields"
-                type="text"
-                style={{ width: "320px" }}
-                value={totalfield}
-              />
+              <div className="d-flex col-md-10" style={{ gap: "10px" }}>
+                <label className="form-label" style={{ whiteSpace: "nowrap" }}>
+                  New Material Code
+                </label>
+                <input
+                  className="in-field mt-1"
+                  type="text"
+                  value={totalfield}
+                />
+              </div>
               <button
-                className="button-style "
+                className="button-style group-button"
                 onClick={handleAlertModal1ButtonClick}
               >
                 Create New Code
               </button>
               <div style={{ marginBottom: "10px" }}>
-                <span style={{ whiteSpace: "nowrap" }}>
+                <label className="form-label" style={{ whiteSpace: "nowrap" }}>
                   Select SHAPE,Material Grade.Enter Parameters and Save
-                </span>
+                </label>
               </div>
             </div>
           </Form>
         </div>
         <div className="col-md-4 col-sm-12 mt-5">
           <div
-            className="mt-5"
+            className="mt-3"
             style={{
               overflowX: "scroll",
               overflowY: "scroll",
@@ -811,6 +816,6 @@ export default function MaterialCodeCreator(props) {
         message={submitMessage || submitError}
         firstbuttontext="Ok"
       />
-    </div>
+    </>
   );
 }

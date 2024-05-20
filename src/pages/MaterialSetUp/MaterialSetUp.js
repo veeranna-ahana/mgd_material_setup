@@ -44,17 +44,17 @@ export default function MaterialSetUp() {
   };
 
   return (
-    <div>
-      <div className="col-md-12">
+    <>
+      <div className="">
         <h4 className="title">Material Grade Creator</h4>
       </div>
-      <div className="row mt-4">
+      <div className="row">
         <div className="col-md-5 col-sm-12">
           <div
             style={{
               overflowX: "scroll",
               overflowY: "scroll",
-              height: "770px",
+              height: "730px",
             }}
           >
             <Table
@@ -90,7 +90,7 @@ export default function MaterialSetUp() {
         </div>
 
         <div className="col-md-7 col-sm-12">
-          <Tabs>
+          <Tabs className="nav-tabs tab_font">
             <Tab eventKey="materialGradeCreator" title="Material Grade Creator">
               <React.Fragment key={selectRow?.index}>
                 <MaterialGradeCreator
@@ -114,6 +114,6 @@ export default function MaterialSetUp() {
           </Tabs>
         </div>
       </div>
-    </div>
+    </>
   );
 }

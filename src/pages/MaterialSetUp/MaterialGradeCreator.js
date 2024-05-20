@@ -128,33 +128,39 @@ export default function MaterialGradeCreator(props) {
         </Table>
       </div>
       <Form className="mt-2">
-        <div className="form-bg ip-box mb-5" style={{ height: "320px" }}>
+        <div className="form-bg" style={{ height: "290px" }}>
           <h5>
-            <b>Add New Grade</b>
+            <label className="form-label">Add New Grade</label>
           </h5>
           <div className="row mb-5">
-            <div className="col-md-4 col-sm-12">
-              <label className="form-label">New Grade</label>
-              <input
-                className="in-fields"
-                type="text"
-                name="newGrade"
-                value={newGrade}
-                onChange={handleChange}
-              />
-              <label className="form-label">Specific Weight</label>
-              <input
-                className="in-fields"
-                type="text"
-                defaultValue={props.selectRow.SpecificWt}
-                onChange={swChange}
-              />
-              <label className="form-label">Excise Class</label>
-              <input
-                className="in-fields"
-                type="text"
-                value={props.selectRow.ExciseClNo}
-              />
+            <div className="col-md-8 col-sm-12">
+              <div className="d-flex" style={{gap:'35px'}}>
+                <label className="form-label" style={{whiteSpace:'nowrap'}}>New Grade</label>
+                <input
+                  className="in-field mt-1"
+                  type="text"
+                  name="newGrade"
+                  value={newGrade}
+                  onChange={handleChange}
+                />
+              </div>
+              <div className="d-flex" style={{gap:'10px'}}>
+                <label className="form-label" style={{whiteSpace:'nowrap'}}>Specific Weight</label>
+                <input
+                  className="in-field mt-1"
+                  type="text"
+                  defaultValue={props.selectRow.SpecificWt}
+                  onChange={swChange}
+                />
+              </div>
+              <div className="d-flex" style={{gap:'33px'}}>
+                <label className="form-label" style={{whiteSpace:'nowrap'}}>Excise Class</label>
+                <input
+                  className="in-field mt-1"
+                  type="text"
+                  value={props.selectRow.ExciseClNo}
+                />
+              </div>
               <button
                 className="button-style"
                 onClick={handleAlertModal1ButtonClick}
